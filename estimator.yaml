@@ -1,0 +1,19 @@
+data:
+  my_dataset_path: "/home/saumyas/Projects/IAM-Vision/Vision_based_pose_estimation/Vision_based_pose_estimation/datasets/mug/"
+  # detectron_pretrained_dataset_name: "coco_2017_train"
+  my_dataset_name: "balloon_train"
+  make_dict_func: xml_to_dict
+  num_workers: 2
+  
+
+train_params:
+  ims_per_batch: 2
+  base_lr: 0.00025 # pick a good LR
+  max_iter: 300 # 300 iterations seems good enough for this toy dataset; you will need to train longer for a practical dataset
+
+model:
+  detectron_pretrained_model_path: "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml" #"COCO-Detection/rpn_R_50_FPN_1x.yaml", "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
+  use_pretrained: False
+  my_model_path: "/home/saumyas/Projects/IAM-Vision/Vision_based_pose_estimation/output/model_final.pth"
+  batch_size_per_image: 128 # faster, and good enough for this toy dataset (default: 512)
+  num_classes: 1

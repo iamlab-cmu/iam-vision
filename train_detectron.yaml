@@ -1,0 +1,2 @@
+dataset_path: "/home/saumyas/Projects/IAM-Vision/Vision_based_pose_estimation/Vision_based_pose_estimation/datasets/balloon/"
+pretrained_model_cfg: "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
