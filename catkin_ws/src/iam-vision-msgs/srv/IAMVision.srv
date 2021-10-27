@@ -1,0 +1,9 @@
+uint8 request_type
+string image_topic_name
+string[] object_names
+sensor_msgs/Image image
+BBox[] bounding_boxes
+---
+uint8 response_type
+bool request_success
+sensor_msgs/Image image
