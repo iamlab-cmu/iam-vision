@@ -36,7 +36,7 @@ class IAMVisionServer:
 
             try:
                 cv_image = self.bridge.imgmsg_to_cv2(image_msg)
-                cv2.imwrite(self.unlabeled_image_path+'image_'+str(self.highest_image_num+1)+'.png', cv_image)
+                cv2.imwrite(self.unlabeled_image_path+'image_'+str(self.highest_image_num+1)+'.png', cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR))
                 self.highest_image_num += 1
                 response_msg = IAMVisionResponse() 
                 response_msg.response_type = req.request_type
@@ -69,11 +69,20 @@ class IAMVisionServer:
                 response_msg.response_type = req.request_type
                 response_msg.request_success = True
 
-                cv_image = cv2.imread(self.unlabeled_image_path+'image_'+str(self.lowest_image_num)+'.png')
+
+                image_path = self.unlabeled_image_path+'image_'+str(self.lowest_image_num)+'.png'
+                cv_image = cv2.imread(image_path)
                 self.lowest_image_num += 1
 
+                response_msg.image_path = image_path
                 response_msg.image = self.bridge.cv2_to_imgmsg(cv_image)
                 return response_msg
+        elif req.request_type == 2:
+            response_msg = IAMVisionResponse() 
+            response_msg.response_type = req.request_type
+            response_msg.request_success = True
+
+            image_path = req.image_path
         
         return response_msg
      
