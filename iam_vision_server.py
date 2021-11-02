@@ -32,51 +32,68 @@ class IAMVisionServer:
     def callback(self, req):
 
         if req.request_type == 0:
-            image_msg = rospy.wait_for_message(req.image_topic_name, Image, timeout=5)
-
             try:
+                image_msg = rospy.wait_for_message(req.image_topic_name, Image, timeout=5)
+
                 cv_image = self.bridge.imgmsg_to_cv2(image_msg)
-                cv2.imwrite(self.unlabeled_image_path+'image_'+str(self.highest_image_num+1)+'.png', cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR))
+                image_path = self.unlabeled_image_path+'image_'+str(self.highest_image_num+1)+'.png'
+                #cv2.imwrite(image_path, cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR))
+
+                cv2.imwrite(image_path, cv_image)
                 self.highest_image_num += 1
                 response_msg = IAMVisionResponse() 
                 response_msg.response_type = req.request_type
                 response_msg.request_success = True
+                response_msg.image_path = image_path
                 return response_msg
-            except CvBridgeError as e:
-                print(e)
+            except:
                 response_msg = IAMVisionResponse() 
                 response_msg.response_type = req.request_type
                 response_msg.request_success = False
                 return response_msg
         elif req.request_type == 1:
-            self.unlabeled_image_files = glob.glob(self.unlabeled_image_path+'*.png')
+            if len(req.image_path) > 0:
+                try:
+                    cv_image = cv2.imread(req.image_path)
+                    response_msg = IAMVisionResponse() 
+                    response_msg.response_type = req.request_type
+                    response_msg.request_success = True
 
-            if len(self.unlabeled_image_files) == 0:
-                self.lowest_image_num = -1
-                self.highest_image_num = -1
-                response_msg = IAMVisionResponse() 
-                response_msg.response_type = req.request_type
-                response_msg.request_success = False
-                return response_msg
+                    response_msg.image_path = req.image_path
+                    response_msg.image = self.bridge.cv2_to_imgmsg(cv_image)
+                    return response_msg
+                except:
+                    response_msg = IAMVisionResponse() 
+                    response_msg.response_type = req.request_type
+                    response_msg.request_success = False
+                    return response_msg
             else:
-                image_nums = []
-                for image_path in self.unlabeled_image_files:
-                    image_nums.append(int(image_path[image_path.rfind('_')+1:image_path.rfind('.')]))
-                self.lowest_image_num = min(image_nums)
-                self.highest_image_num = max(image_nums)
+                self.unlabeled_image_files = glob.glob(self.unlabeled_image_path+'*.png')
 
-                response_msg = IAMVisionResponse() 
-                response_msg.response_type = req.request_type
-                response_msg.request_success = True
+                if len(self.unlabeled_image_files) == 0:
+                    self.lowest_image_num = -1
+                    self.highest_image_num = -1
+                    response_msg = IAMVisionResponse() 
+                    response_msg.response_type = req.request_type
+                    response_msg.request_success = False
+                    return response_msg
+                else:
+                    image_nums = []
+                    for image_path in self.unlabeled_image_files:
+                        image_nums.append(int(image_path[image_path.rfind('_')+1:image_path.rfind('.')]))
+                    self.lowest_image_num = min(image_nums)
+                    self.highest_image_num = max(image_nums)
 
+                    response_msg = IAMVisionResponse() 
+                    response_msg.response_type = req.request_type
+                    response_msg.request_success = True
 
-                image_path = self.unlabeled_image_path+'image_'+str(self.lowest_image_num)+'.png'
-                cv_image = cv2.imread(image_path)
-                self.lowest_image_num += 1
+                    image_path = self.unlabeled_image_path+'image_'+str(self.lowest_image_num)+'.png'
+                    cv_image = cv2.imread(image_path)
 
-                response_msg.image_path = image_path
-                response_msg.image = self.bridge.cv2_to_imgmsg(cv_image)
-                return response_msg
+                    response_msg.image_path = image_path
+                    response_msg.image = self.bridge.cv2_to_imgmsg(cv_image)
+                    return response_msg
         elif req.request_type == 2:
             response_msg = IAMVisionResponse() 
             response_msg.response_type = req.request_type
