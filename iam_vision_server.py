@@ -33,13 +33,15 @@ class IAMVisionServer:
 
         if req.request_type == 0:
             try:
-                image_msg = rospy.wait_for_message(req.image_topic_name, Image, timeout=5)
-
+                image_msg = rospy.wait_for_message(req.camera_topic_name, Image, timeout=5)
                 cv_image = self.bridge.imgmsg_to_cv2(image_msg)
                 image_path = self.unlabeled_image_path+'image_'+str(self.highest_image_num+1)+'.png'
-                #cv2.imwrite(image_path, cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR))
 
-                cv2.imwrite(image_path, cv_image)
+                if image_msg.encoding == 'bgra8':    
+                    cv2.imwrite(image_path, cv_image)
+                else:
+                    cv2.imwrite(image_path, cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR))
+                
                 self.highest_image_num += 1
                 response_msg = IAMVisionResponse() 
                 response_msg.response_type = req.request_type
@@ -88,18 +90,39 @@ class IAMVisionServer:
                     response_msg.response_type = req.request_type
                     response_msg.request_success = True
 
-                    image_path = self.unlabeled_image_path+'image_'+str(self.lowest_image_num)+'.png'
+                    image_path = self.unlabeled_image_path+'image_'+str(self.highest_image_num)+'.png'
                     cv_image = cv2.imread(image_path)
 
                     response_msg.image_path = image_path
                     response_msg.image = self.bridge.cv2_to_imgmsg(cv_image)
                     return response_msg
         elif req.request_type == 2:
-            response_msg = IAMVisionResponse() 
-            response_msg.response_type = req.request_type
-            response_msg.request_success = True
+            try:
+                cv_image = self.bridge.imgmsg_to_cv2(req.image)
+                cv2.imwrite(req.image_path, cv_image)
 
-            image_path = req.image_path
+                response_msg = IAMVisionResponse() 
+                response_msg.response_type = req.request_type
+                response_msg.image_path = req.image_path
+                response_msg.request_success = True
+            except:
+                response_msg = IAMVisionResponse() 
+                response_msg.response_type = req.request_type
+                response_msg.request_success = False
+        elif req.request_type == 3:
+            try:
+                cv_image = self.bridge.imgmsg_to_cv2(req.image)
+                cv2.imwrite(req.image_path, cv_image)
+
+                response_msg = IAMVisionResponse() 
+                response_msg.response_type = req.request_type
+                response_msg.image_path = req.image_path
+                response_msg.request_success = True
+            except:
+                response_msg = IAMVisionResponse() 
+                response_msg.response_type = req.request_type
+                response_msg.request_success = False
+
         
         return response_msg
      

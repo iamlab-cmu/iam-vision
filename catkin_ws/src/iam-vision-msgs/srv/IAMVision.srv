@@ -1,7 +1,8 @@
 uint8 request_type
-string image_topic_name
+string camera_topic_name
 string image_path
 string[] object_names
+sensor_msgs/Image image
 sensor_msgs/Image masks
 BBox[] bounding_boxes
 ---
