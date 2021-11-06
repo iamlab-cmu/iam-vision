@@ -1,21 +1,13 @@
-import wget, random, cv2, os
-from zipfile import ZipFile
+import random, cv2, os
 from detectron2.structures import BoxMode
 from detectron2 import model_zoo
 from detectron2.utils.visualizer import Visualizer
-from Vision_based_pose_estimation.datasets.data_utils import *
+from data_utils import *
 from detectron2.data import MetadataCatalog, DatasetCatalog
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultTrainer
 
 def main():
-    # Download custom dataset
-    #TODO: replace below with loading custom dataset
-    # wget.download('https://github.com/matterport/Mask_RCNN/releases/download/v2.1/balloon_dataset.zip', '../datasets/')
-    # # Create a ZipFile Object and load sample.zip in it
-    # with ZipFile('../datasets/balloon_dataset.zip', 'r') as zipObj:
-    #    # Extract all the contents of zip file in current directory
-    #    zipObj.extractall()
 
     class_name = "mug"
     dataset_path = "/home/saumyas/Projects/IAM-Vision/Vision_based_pose_estimation/Vision_based_pose_estimation/datasets/" + class_name + "/" #TODO: add cfg value here

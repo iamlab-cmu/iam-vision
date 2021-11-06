@@ -42,6 +42,37 @@ def get_balloon_dicts(img_dir):
         dataset_dicts.append(record)
     return dataset_dicts
 
+def dataset_to_dict(dataset_path):
+    dataset_dicts = []
+    for idx, filename in enumerate(os.listdir(dataset_path)):
+        if filename.endswith(".xml"): #label files/xml's
+            record = {}
+
+            filename_img = dataset_path + "/" + filename[:-4] + ".png"
+            # import ipdb; ipdb.set_trace()
+            height, width = cv2.imread(filename_img).shape[:2]
+            
+            record["file_name"] = filename_img
+            record["image_id"] = idx
+            record["height"] = height
+            record["width"] = width
+        
+            objs = []
+            tree = ET.parse(dataset_path + "/" + filename)
+            root = tree.getroot() 
+            root_tag = root.tag
+            for form in root.findall("object"):
+                obj = {
+                    "bbox": [int(form[4][0].text), int(form[4][1].text), int(form[4][2].text), int(form[4][3].text)],
+                    "bbox_mode": BoxMode.XYXY_ABS,
+                    "segmentation": [], # [poly]
+                    "category_id": 0,
+                }
+                objs.append(obj)
+            record["annotations"] = objs
+            dataset_dicts.append(record)
+    return dataset_dicts
+
 def xml_to_dict(dataset_path):
     dataset_dicts = []
     for idx, filename in enumerate(os.listdir(dataset_path)):
