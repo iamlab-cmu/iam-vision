@@ -45,7 +45,7 @@ def get_balloon_dicts(img_dir):
 def dataset_to_dict(dataset_path):
     dataset_dicts = []
     for idx, filename in enumerate(os.listdir(dataset_path)):
-        if filename.endswith(".xml"): #label files/xml's
+        if filename.endswith(".json"): #label files/json's
             record = {}
 
             filename_img = dataset_path + "/" + filename[:-4] + ".png"
