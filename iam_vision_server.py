@@ -7,6 +7,7 @@ import rospy
 import cv2
 import string
 import json
+import numpy as np
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
@@ -18,8 +19,8 @@ from geometry_msgs.msg import Point as Point3D
 class IAMVisionServer:
 
     def __init__(self):
-        self.azure_kinect_intrinsics = CameraIntrinsics.load(args.intrinsics_file_path)
-        self.azure_kinect_extrinsics = RigidTransform.load(args.extrinsics_file_path)
+        self.azure_kinect_intrinsics = CameraIntrinsics.load('calib/azure_kinect.intr')
+        self.azure_kinect_extrinsics = RigidTransform.load('calib/azure_kinect_overhead_to_world.tf')
 
         self.bridge = CvBridge()
         self.service = rospy.Service('iam_vision_server', IAMVision, self.callback)
@@ -86,18 +87,17 @@ class IAMVisionServer:
                 image_msg = rospy.wait_for_message(req.camera_topic_name, Image, timeout=5)
                 cv_image = self.bridge.imgmsg_to_cv2(image_msg)
                 self.get_lowest_and_highest_unlabeled_image_nums()
-                image_path = self.unlabeled_image_path+'image_'+str(self.highest_unlabeled_image_num+1)+'.png'
-
+                rgb_image_path = self.unlabeled_image_path+'image_'+str(self.highest_unlabeled_image_num+1)+'.png'
                 if image_msg.encoding == 'bgra8':    
-                    cv2.imwrite(image_path, cv_image)
+                    cv2.imwrite(rgb_image_path, cv_image)
                 else:
-                    cv2.imwrite(image_path, cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR))
+                    cv2.imwrite(rgb_image_path, cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR))
                 
                 self.highest_unlabeled_image_num += 1
                 response_msg = IAMVisionResponse() 
                 response_msg.response_type = req.request_type
                 response_msg.request_success = True
-                response_msg.image_path = image_path
+                response_msg.rgb_image_path = rgb_image_path
                 return response_msg
             except:
                 response_msg = IAMVisionResponse() 
@@ -131,8 +131,9 @@ class IAMVisionServer:
                     response_msg.response_type = req.request_type
                     response_msg.request_success = True
 
-                    response_msg.image_path = req.rgb_image_path
+                    response_msg.rgb_image_path = req.rgb_image_path
                     response_msg.image = self.bridge.cv2_to_imgmsg(cv_image)
+
                     return response_msg
                 except:
                     response_msg = IAMVisionResponse() 
@@ -155,7 +156,7 @@ class IAMVisionServer:
                         response_msg = IAMVisionResponse() 
                         response_msg.response_type = req.request_type
                         response_msg.request_success = True
-                        response_msg.image_path = image_path
+                        response_msg.rgb_image_path = rgb_image_path
                         response_msg.image = self.bridge.cv2_to_imgmsg(cv_image)
                         return response_msg
                     except:
@@ -196,7 +197,7 @@ class IAMVisionServer:
 
                 response_msg = IAMVisionResponse() 
                 response_msg.response_type = req.request_type
-                response_msg.image_path = new_image_path
+                response_msg.rgb_image_path = new_image_path
                 response_msg.request_success = True
             except:
                 response_msg = IAMVisionResponse() 
@@ -213,7 +214,6 @@ class IAMVisionServer:
                 for point in req.points:
                     point_center = Point(np.array([point.x, point.y]), 'azure_kinect_overhead')
                     point_depth = depth_image[point.y, point.x]
-    
                     world_point = self.azure_kinect_extrinsics * self.azure_kinect_intrinsics.deproject_pixel(point_depth, point_center)    
                     response_msg.points.append(Point3D(world_point.x, world_point.y, world_point.z))
                 
@@ -233,7 +233,7 @@ class IAMVisionServer:
 
                 response_msg = IAMVisionResponse() 
                 response_msg.response_type = req.request_type
-                response_msg.image_path = req.rgb_image_path
+                response_msg.rgb_image_path = req.rgb_image_path
                 response_msg.request_success = True
             except:
                 response_msg = IAMVisionResponse() 
@@ -247,7 +247,7 @@ class IAMVisionServer:
 
                 response_msg = IAMVisionResponse() 
                 response_msg.response_type = req.request_type
-                response_msg.image_path = req.depth_image_path
+                response_msg.depth_image_path = req.depth_image_path
                 response_msg.request_success = True
             except:
                 response_msg = IAMVisionResponse() 
@@ -261,7 +261,7 @@ class IAMVisionServer:
                 response_msg.response_type = req.request_type
                 response_msg.request_success = True
 
-                response_msg.image_path = req.depth_image_path
+                response_msg.depth_image_path = req.depth_image_path
                 response_msg.image = self.bridge.cv2_to_imgmsg(cv_image)
                 return response_msg
             except:
