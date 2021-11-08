@@ -1,0 +1,3 @@
+[submodule "catkin_ws/src/iam-vision-msgs"]
+	path = catkin_ws/src/iam-vision-msgs
+	url = https://github.com/iamlab-cmu/iam-vision-msgs.git
