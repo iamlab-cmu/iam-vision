@@ -67,7 +67,8 @@ class IAMVisionServer:
         else:
             image_nums = []
             for image_path in self.labeled_image_files:
-                image_nums.append(int(image_path[image_path.rfind('_')+1:image_path.rfind('.')]))
+                if 'mask' not in image_path:
+                    image_nums.append(int(image_path[image_path.rfind('_')+1:image_path.rfind('.')]))
             self.lowest_labeled_image_num = min(image_nums)
             self.highest_labeled_image_num = max(image_nums)
 
@@ -78,6 +79,7 @@ class IAMVisionServer:
             try:
                 image_msg = rospy.wait_for_message(req.camera_topic_name, Image, timeout=5)
                 cv_image = self.bridge.imgmsg_to_cv2(image_msg)
+                self.get_lowest_and_highest_unlabeled_image_nums()
                 image_path = self.unlabeled_image_path+'image_'+str(self.highest_unlabeled_image_num+1)+'.png'
 
                 if image_msg.encoding == 'bgra8':    
