@@ -11,10 +11,16 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 from iam_vision_msgs.srv import *
+from autolab_core import RigidTransform, Point
+from perception import CameraIntrinsics
+from geometry_msgs.msg import Point as Point3D
 
 class IAMVisionServer:
 
     def __init__(self):
+        self.azure_kinect_intrinsics = CameraIntrinsics.load(args.intrinsics_file_path)
+        self.azure_kinect_extrinsics = RigidTransform.load(args.extrinsics_file_path)
+
         self.bridge = CvBridge()
         self.service = rospy.Service('iam_vision_server', IAMVision, self.callback)
         self.iam_vision_path = os.path.dirname(os.path.realpath(__file__))
@@ -74,7 +80,7 @@ class IAMVisionServer:
 
     def callback(self, req):
 
-        ## Save Camera Image
+        ## Save RGB Camera Image
         if req.request_type == 0:
             try:
                 image_msg = rospy.wait_for_message(req.camera_topic_name, Image, timeout=5)
@@ -98,16 +104,34 @@ class IAMVisionServer:
                 response_msg.response_type = req.request_type
                 response_msg.request_success = False
                 return response_msg
-        ## Get Latest Image in Unlabeled
+        ## Save Depth Camera Image
         elif req.request_type == 1:
-            if len(req.image_path) > 0:
+            try:
+                image_msg = rospy.wait_for_message(req.camera_topic_name, Image, timeout=5)
+                cv_image = self.bridge.imgmsg_to_cv2(image_msg)
+
+                cv2.imwrite(req.depth_image_path, cv_image)
+
+                response_msg = IAMVisionResponse() 
+                response_msg.response_type = req.request_type
+                response_msg.request_success = True
+                response_msg.depth_image_path = req.depth_image_path
+                return response_msg
+            except:
+                response_msg = IAMVisionResponse() 
+                response_msg.response_type = req.request_type
+                response_msg.request_success = False
+                return response_msg
+        ## Get Latest RGB Image in Unlabeled
+        elif req.request_type == 2:
+            if len(req.rgb_image_path) > 0:
                 try:
-                    cv_image = cv2.imread(req.image_path)
+                    cv_image = cv2.imread(req.rgb_image_path)
                     response_msg = IAMVisionResponse() 
                     response_msg.response_type = req.request_type
                     response_msg.request_success = True
 
-                    response_msg.image_path = req.image_path
+                    response_msg.image_path = req.rgb_image_path
                     response_msg.image = self.bridge.cv2_to_imgmsg(cv_image)
                     return response_msg
                 except:
@@ -139,25 +163,11 @@ class IAMVisionServer:
                         response_msg.response_type = req.request_type
                         response_msg.request_success = False
                         return response_msg
-        ## Save Image
-        elif req.request_type == 2:
-            try:
-                cv_image = self.bridge.imgmsg_to_cv2(req.image)
-                cv2.imwrite(req.image_path, cv_image)
-
-                response_msg = IAMVisionResponse() 
-                response_msg.response_type = req.request_type
-                response_msg.image_path = req.image_path
-                response_msg.request_success = True
-            except:
-                response_msg = IAMVisionResponse() 
-                response_msg.response_type = req.request_type
-                response_msg.request_success = False
         ## Save Masks and Labeled Image Info
         elif req.request_type == 3:
             try:
                 new_image_path = self.labeled_image_path+'image_'+str(self.highest_labeled_image_num+1)+'.png'
-                os.rename(req.image_path, new_image_path)
+                os.rename(req.rgb_image_path, new_image_path)
                 new_mask_image_path = self.labeled_image_path+'image_'+str(self.highest_labeled_image_num+1)+'_mask.png'
                 mask_image = self.bridge.imgmsg_to_cv2(req.masks)
                 cv2.imwrite(new_mask_image_path, mask_image)
@@ -195,19 +205,71 @@ class IAMVisionServer:
         ## Get Positions in Robot Coordinates
         elif req.request_type == 4:
             try:
+                depth_image = cv2.imread(req.depth_image_path)
+                    
+                response_msg = IAMVisionResponse() 
+                response_msg.response_type = req.request_type
+
+                for point in req.points:
+                    point_center = Point(np.array([point.x, point.y]), 'azure_kinect_overhead')
+                    point_depth = depth_image[point.y, point.x]
+    
+                    world_point = self.azure_kinect_extrinsics * self.azure_kinect_intrinsics.deproject_pixel(point_depth, point_center)    
+                    response_msg.points.append(Point3D(world_point.x, world_point.y, world_point.z))
+                
+                response_msg.request_success = True
+
+                return response_msg
+            except:
+                response_msg = IAMVisionResponse() 
+                response_msg.response_type = req.request_type
+                response_msg.request_success = False
+                return response_msg
+        ## Save RGB Image
+        elif req.request_type == 5:
+            try:
                 cv_image = self.bridge.imgmsg_to_cv2(req.image)
-                cv2.imwrite(req.image_path, cv_image)
+                cv2.imwrite(req.rgb_image_path, cv_image)
 
                 response_msg = IAMVisionResponse() 
                 response_msg.response_type = req.request_type
-                response_msg.image_path = req.image_path
+                response_msg.image_path = req.rgb_image_path
                 response_msg.request_success = True
             except:
                 response_msg = IAMVisionResponse() 
                 response_msg.response_type = req.request_type
                 response_msg.request_success = False
+        ## Save Depth Image
+        elif req.request_type == 6:
+            try:
+                cv_image = self.bridge.imgmsg_to_cv2(req.image)
+                cv2.imwrite(req.depth_image_path, cv_image)
 
-        
+                response_msg = IAMVisionResponse() 
+                response_msg.response_type = req.request_type
+                response_msg.image_path = req.depth_image_path
+                response_msg.request_success = True
+            except:
+                response_msg = IAMVisionResponse() 
+                response_msg.response_type = req.request_type
+                response_msg.request_success = False
+        ## Get Depth Image
+        elif req.request_type == 7:
+            try:
+                cv_image = cv2.imread(req.depth_image_path)
+                response_msg = IAMVisionResponse() 
+                response_msg.response_type = req.request_type
+                response_msg.request_success = True
+
+                response_msg.image_path = req.depth_image_path
+                response_msg.image = self.bridge.cv2_to_imgmsg(cv_image)
+                return response_msg
+            except:
+                response_msg = IAMVisionResponse() 
+                response_msg.response_type = req.request_type
+                response_msg.request_success = False
+                return response_msg
+
         return response_msg
      
 
