@@ -150,8 +150,8 @@ class IAMVisionServer:
                     return response_msg
                 else:
                     try:
-                        image_path = self.unlabeled_image_path+'image_'+str(self.highest_unlabeled_image_num)+'.png'
-                        cv_image = cv2.imread(image_path)
+                        rgb_image_path = self.unlabeled_image_path+'image_'+str(self.highest_unlabeled_image_num)+'.png'
+                        cv_image = cv2.imread(rgb_image_path)
 
                         response_msg = IAMVisionResponse() 
                         response_msg.response_type = req.request_type
