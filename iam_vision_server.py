@@ -25,21 +25,30 @@ class IAMVisionServer:
         self.bridge = CvBridge()
         self.service = rospy.Service('iam_vision_server', IAMVision, self.callback)
         self.iam_vision_path = os.path.dirname(os.path.realpath(__file__))
-        self.object_type_path = self.iam_vision_path+'/images/object_types.txt'
+        self.images_folder_path = self.iam_vision_path + '/images/'
+
+        if not os.path.exists(self.images_folder_path):
+            os.makedirs(self.images_folder_path)
+
+        self.object_type_path = self.images_folder_path + 'object_types.txt'
         self.object_types = []
-        self.unlabeled_image_path = self.iam_vision_path+'/images/unlabeled/'
-        self.labeled_image_path = self.iam_vision_path+'/images/labeled/'
+        self.unlabeled_image_path = self.images_folder_path + 'unlabeled/'
+        self.labeled_image_path = self.images_folder_path + 'labeled/'
         self.parse_object_types()
         self.get_lowest_and_highest_unlabeled_image_nums()
         self.get_lowest_and_highest_labeled_image_nums()
 
     def parse_object_types(self):
         self.object_types = []
-        with open(self.object_type_path, 'r') as f:
-            lines = f.readlines()
+        if os.path.exists(self.object_type_path)
+            with open(self.object_type_path, 'r') as f:
+                lines = f.readlines()
 
-            for line in lines:
-                self.object_types.append(line.strip())
+                for line in lines:
+                    self.object_types.append(line.strip())
+        else:
+            with open(self.object_type_path, 'w') as f:
+                pass
 
     def add_new_object_types(self, object_types):
         for object_type in object_types:
@@ -54,6 +63,9 @@ class IAMVisionServer:
                 f.write(object_type+'\n')
 
     def get_lowest_and_highest_unlabeled_image_nums(self):
+        if not os.path.exists(self.unlabeled_image_path):
+            os.makedirs(self.unlabeled_image_path)
+
         self.unlabeled_image_files = glob.glob(self.unlabeled_image_path+'*.png')
         if len(self.unlabeled_image_files) == 0:
             self.lowest_unlabeled_image_num = -1
@@ -66,6 +78,9 @@ class IAMVisionServer:
             self.highest_unlabeled_image_num = max(image_nums)
 
     def get_lowest_and_highest_labeled_image_nums(self):
+        if not os.path.exists(self.labeled_image_path):
+            os.makedirs(self.labeled_image_path)
+        
         self.labeled_image_files = glob.glob(self.labeled_image_path+'*.png')
 
         if len(self.labeled_image_files) == 0:
