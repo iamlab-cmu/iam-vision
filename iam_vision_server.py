@@ -19,8 +19,8 @@ from geometry_msgs.msg import Point as Point3D
 class IAMVisionServer:
 
     def __init__(self):
-        self.azure_kinect_intrinsics = CameraIntrinsics.load('calib/azure_kinect.intr')
-        self.azure_kinect_extrinsics = RigidTransform.load('calib/azure_kinect_overhead_to_world.tf')
+        self.azure_kinect_intrinsics = CameraIntrinsics.load('../camera-calibration/calib/azure_kinect.intr')
+        self.azure_kinect_extrinsics = RigidTransform.load('../camera-calibration/calib/azure_kinect_overhead/azure_kinect_overhead_to_world.tf')
 
         self.bridge = CvBridge()
         self.service = rospy.Service('iam_vision_server', IAMVision, self.callback)
