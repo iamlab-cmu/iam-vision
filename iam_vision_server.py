@@ -40,7 +40,7 @@ class IAMVisionServer:
 
     def parse_object_types(self):
         self.object_types = []
-        if os.path.exists(self.object_type_path)
+        if os.path.exists(self.object_type_path):
             with open(self.object_type_path, 'r') as f:
                 lines = f.readlines()
 
